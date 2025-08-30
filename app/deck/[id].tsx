@@ -1,3 +1,12 @@
+import DeckModal, { DeckModalHandle } from "@/components/DeckModal";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { IconSymbol } from "@/components/ui/IconSymbol";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { StorageService } from "@/services/storage";
+import { Card, Deck } from "@/types/flashcard";
+import { triggerHaptic, triggerNotification } from "@/utils/haptics";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -21,16 +30,6 @@ import {
   Text,
   View,
 } from "react-native";
-
-import DeckModal, { DeckModalHandle } from "@/components/DeckModal";
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import { IconSymbol } from "@/components/ui/IconSymbol";
-import { Colors } from "@/constants/Colors";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { StorageService } from "@/services/storage";
-import { Card, Deck } from "@/types/flashcard";
-import { triggerHaptic, triggerNotification } from "@/utils/haptics";
 
 export default function DeckDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -220,11 +219,6 @@ export default function DeckDetailScreen() {
       hitSlop={20}
     >
       <View style={styles.cardContent}>
-        <View style={styles.cardNumber}>
-          <Text style={[styles.cardNumberText, { color: colors.icon }]}>
-            #{(index + 1).toString().padStart(2, "0")}
-          </Text>
-        </View>
         <Text
           style={[styles.cardFront, { color: colors.text }]}
           numberOfLines={2}
@@ -242,16 +236,6 @@ export default function DeckDetailScreen() {
               {item.difficulty.toUpperCase()}
             </Text>
           </View>
-          <Pressable
-            style={({ pressed }) => [
-              styles.cardDeleteButton,
-              { opacity: pressed ? 0.5 : 1 },
-            ]}
-            onPress={() => handleDeleteCard(item.id)}
-            hitSlop={20}
-          >
-            <IconSymbol name="trash" size={16} color={colors.error} />
-          </Pressable>
         </View>
       </View>
     </Pressable>
@@ -499,21 +483,41 @@ export default function DeckDetailScreen() {
           </View>
 
           <View style={styles.modalFooter}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.modalButton,
-                styles.cancelButton,
-                {
-                  borderColor: colors.cardBorder,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-              onPress={handleDismissCardModal}
-            >
-              <Text style={[styles.buttonText, { color: colors.text }]}>
-                Cancel
-              </Text>
-            </Pressable>
+            {editingCard ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  {
+                    backgroundColor: colors.error,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+                onPress={() => {
+                  handleDeleteCard(editingCard.id);
+                  handleDismissCardModal();
+                }}
+              >
+                <Text style={[styles.buttonText, { color: "#FFFFFF" }]}>
+                  Delete
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  styles.cancelButton,
+                  {
+                    borderColor: colors.cardBorder,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+                onPress={handleDismissCardModal}
+              >
+                <Text style={[styles.buttonText, { color: colors.text }]}>
+                  Cancel
+                </Text>
+              </Pressable>
+            )}
             <Pressable
               style={({ pressed }) => [
                 styles.modalButton,
@@ -559,6 +563,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 16,
+    gap: 16,
   },
   headerContent: {
     flexDirection: "row",
@@ -638,16 +643,6 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     gap: 12,
   },
-  cardNumber: {
-    position: "absolute",
-    top: -8,
-    right: -8,
-  },
-  cardNumberText: {
-    fontSize: 12,
-    fontWeight: "600",
-    opacity: 0.5,
-  },
   cardText: {
     flex: 1,
     marginRight: 12,
@@ -674,7 +669,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    flex: 1,
+    alignSelf: "flex-start",
   },
   difficultyText: {
     color: "white",

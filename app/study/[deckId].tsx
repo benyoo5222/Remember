@@ -33,7 +33,6 @@ export default function StudyScreen() {
 
   const [deck, setDeck] = useState<Deck | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
-  const [displayCards, setDisplayCards] = useState<Card[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [session, setSession] = useState<StudySession | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
@@ -52,8 +51,6 @@ export default function StudyScreen() {
     setDeck(loadedDeck);
     const loadedCards = await StorageService.getCardsByDeck(deckId);
     setCards(loadedCards);
-    // Duplicate cards for infinite scrolling (like Rakha112)
-    setDisplayCards([...loadedCards, ...loadedCards]);
   }, [deckId]);
 
   const startSession = useCallback(async () => {
@@ -274,8 +271,8 @@ export default function StudyScreen() {
       </View>
 
       <View style={styles.cardContainer}>
-        {displayCards.map((card, index) => {
-          // Only render cards within visible range (like Rakha112)
+        {cards.map((card, index) => {
+          // Only render cards within visible range
           if (
             index > currentIndex + MAX_VISIBLE_CARDS ||
             index < currentIndex
@@ -295,9 +292,9 @@ export default function StudyScreen() {
               setCurrentIndex={setCurrentIndex}
               animatedValue={animatedValue}
               maxVisibleItems={MAX_VISIBLE_CARDS}
-              dataLength={displayCards.length}
-              displayCards={displayCards}
-              setDisplayCards={setDisplayCards}
+              dataLength={cards.length}
+              displayCards={cards}
+              setDisplayCards={setCards}
               onCorrect={handleCorrect}
               onIncorrect={handleIncorrect}
               isSessionComplete={sessionComplete}

@@ -128,28 +128,6 @@ export default function StatsScreen() {
               Study Time
             </Text>
           </View>
-
-          <View
-            style={[
-              styles.statCard,
-              { backgroundColor: colors.card, borderColor: colors.cardBorder },
-            ]}
-          >
-            <View
-              style={[
-                styles.iconContainer,
-                { backgroundColor: colors.success + "20" },
-              ]}
-            >
-              <IconSymbol name="flame" size={20} color={colors.success} />
-            </View>
-            <Text style={[styles.statValue, { color: colors.success }]}>
-              {stats.studyStreak}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.icon }]}>
-              Day Streak
-            </Text>
-          </View>
         </View>
 
         <ThemedView style={styles.section}>

@@ -87,9 +87,7 @@ const StudyCard = React.forwardRef<StudyCardRef, StudyCardProps>(({
       onIncorrect();
     }
     
-    // Add card to end of array (like Rakha112)
-    setDisplayCards([...displayCards, displayCards[currentIndex]]);
-    // Move to next card
+    // Move to next card (no more infinite loop)
     setCurrentIndex(currentIndex + 1);
   };
 
@@ -283,9 +281,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   card: {
-    width: '90%',
-    height: 300,
-    marginHorizontal: 20,
+    width: '95%',
+    height: 420,
+    marginHorizontal: 10,
     borderRadius: 20,
     borderWidth: 1,
     shadowColor: '#000',
