@@ -46,12 +46,21 @@ export const Colors = {
 };
 
 export const DeckColors = [
-  { light: '#6366f1', dark: '#818cf8', name: 'Indigo' },
-  { light: '#8b5cf6', dark: '#a78bfa', name: 'Purple' },
-  { light: '#ec4899', dark: '#f472b6', name: 'Pink' },
-  { light: '#ef4444', dark: '#f87171', name: 'Red' },
-  { light: '#f59e0b', dark: '#fbbf24', name: 'Amber' },
-  { light: '#10b981', dark: '#34d399', name: 'Emerald' },
-  { light: '#06b6d4', dark: '#22d3ee', name: 'Cyan' },
-  { light: '#3b82f6', dark: '#60a5fa', name: 'Blue' },
+  { light: '#6366f1', dark: '#818cf8', name: 'Indigo', defaultEmoji: '📘' },
+  { light: '#8b5cf6', dark: '#a78bfa', name: 'Purple', defaultEmoji: '🔮' },
+  { light: '#ec4899', dark: '#f472b6', name: 'Pink', defaultEmoji: '🌸' },
+  { light: '#ef4444', dark: '#f87171', name: 'Red', defaultEmoji: '❤️' },
+  { light: '#f59e0b', dark: '#fbbf24', name: 'Amber', defaultEmoji: '⚡' },
+  { light: '#10b981', dark: '#34d399', name: 'Emerald', defaultEmoji: '🌿' },
+  { light: '#06b6d4', dark: '#22d3ee', name: 'Cyan', defaultEmoji: '💎' },
+  { light: '#3b82f6', dark: '#60a5fa', name: 'Blue', defaultEmoji: '🌊' },
 ];
+
+export const EMOJI_CATEGORIES = {
+  learning: ['📚', '📖', '📝', '✏️', '📓', '📔', '📕', '📗', '📘', '📙', '🎓', '🧠'],
+  nature: ['🌸', '🌺', '🌻', '🌷', '🌹', '🌿', '🌱', '🌳', '🌲', '🍀', '🌊', '⛰️'],
+  activities: ['⚽', '🏀', '🎾', '🎮', '🎯', '🎨', '🎭', '🎪', '🎬', '🎤', '🎧', '🎸'],
+  objects: ['💎', '🔮', '⚡', '🔥', '💫', '⭐', '🌟', '✨', '🎁', '🏆', '🥇', '👑'],
+  symbols: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💯', '✅', '🔴', '🟢'],
+  food: ['🍎', '🍊', '🍋', '🍇', '🍓', '🍑', '🥑', '🍕', '🍔', '🍰', '🍩', '🍪'],
+};

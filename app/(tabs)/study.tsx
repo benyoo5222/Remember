@@ -1,110 +1,224 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { StorageService } from '@/services/storage';
+import { Deck } from '@/types/flashcard';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { LinearGradient } from 'expo-linear-gradient';
+import { triggerHaptic } from '@/utils/haptics';
 
-export default function TabTwoScreen() {
+export default function StudyScreen() {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+  const [decks, setDecks] = useState<Deck[]>([]);
+
+  useEffect(() => {
+    loadDecks();
+  }, []);
+
+  const loadDecks = async () => {
+    const loadedDecks = await StorageService.getAllDecks();
+    setDecks(loadedDecks.filter(deck => deck.cardCount > 0));
+  };
+
+  const startStudySession = async (deck: Deck) => {
+    await triggerHaptic('light');
+    Alert.alert('Study Session', `Starting study session for: ${deck.name}`);
+    // Navigate to study session screen (to be implemented)
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
+    <ThemedView style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <ThemedView style={styles.header}>
+          <ThemedText type="title" style={styles.title}>Study</ThemedText>
+          <ThemedText style={[styles.subtitle, { color: colors.icon }]}>
+            Select a deck to start studying
           </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
+        </ThemedView>
+
+        {decks.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <IconSymbol name="brain" size={64} color={colors.icon} style={{ opacity: 0.5 }} />
+            <ThemedText style={styles.emptyText}>No decks available</ThemedText>
+            <ThemedText style={[styles.emptySubtext, { color: colors.icon }]}>
+              Create some cards in your decks first
             </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+          </View>
+        ) : (
+          <View style={styles.deckList}>
+            {decks.map((deck) => (
+              <TouchableOpacity
+                key={deck.id}
+                style={styles.deckItem}
+                onPress={() => startStudySession(deck)}
+              >
+                <LinearGradient
+                  colors={[
+                    deck.color,
+                    colorScheme === 'dark' ? `${deck.color}AA` : `${deck.color}CC`,
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.deckGradient}
+                >
+                  <View style={styles.deckContent}>
+                    <View style={styles.deckInfo}>
+                      {deck.icon && <Text style={styles.deckIcon}>{deck.icon}</Text>}
+                      <View style={styles.deckText}>
+                        <Text style={styles.deckName}>{deck.name}</Text>
+                        <Text style={styles.cardCount}>{deck.cardCount} cards</Text>
+                      </View>
+                    </View>
+                    <IconSymbol name="chevron.right" size={20} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.quickStart}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Quick Actions</ThemedText>
+          
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+            onPress={() => Alert.alert('Coming Soon', 'Random practice will be available soon')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: colors.primaryGradientEnd }]}>
+              <IconSymbol name="shuffle" size={24} color="white" />
+            </View>
+            <View style={styles.actionText}>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>Random Practice</Text>
+              <Text style={[styles.actionSubtitle, { color: colors.icon }]}>
+                Study cards from all decks
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+            onPress={() => Alert.alert('Coming Soon', 'Review mode will be available soon')}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: colors.warning }]}>
+              <IconSymbol name="clock.arrow.circlepath" size={24} color="white" />
+            </View>
+            <View style={styles.actionText}>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>Due for Review</Text>
+              <Text style={[styles.actionSubtitle, { color: colors.icon }]}>
+                Cards that need reviewing
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    paddingTop: 60,
   },
-  titleContainer: {
+  header: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  emptyText: {
+    fontSize: 20,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 16,
+  },
+  deckList: {
+    paddingHorizontal: 20,
+  },
+  deckItem: {
+    marginBottom: 12,
+  },
+  deckGradient: {
+    borderRadius: 16,
+    padding: 20,
+  },
+  deckContent: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  deckInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  deckIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  deckText: {
+    flex: 1,
+  },
+  deckName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 4,
+  },
+  cardCount: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  quickStart: {
+    marginTop: 32,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  actionText: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  actionSubtitle: {
+    fontSize: 14,
   },
 });

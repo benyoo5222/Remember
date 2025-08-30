@@ -1,12 +1,24 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Deck, Card, StudySession, StudyStats, DeckWithCards } from '@/types/flashcard';
+import {
+  Card,
+  Deck,
+  DeckWithCards,
+  StudySession,
+  StudyStats,
+} from "@/types/flashcard";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Crypto from "expo-crypto";
 
 const STORAGE_KEYS = {
-  DECKS: '@flashcards_decks',
-  CARDS: '@flashcards_cards',
-  STUDY_SESSIONS: '@flashcards_study_sessions',
-  STUDY_STATS: '@flashcards_study_stats',
+  DECKS: "@flashcards_decks",
+  CARDS: "@flashcards_cards",
+  STUDY_SESSIONS: "@flashcards_study_sessions",
+  STUDY_STATS: "@flashcards_study_stats",
+  SETTINGS: "@flashcards_settings",
 };
+
+export interface Settings {
+  hapticEnabled: boolean;
+}
 
 export class StorageService {
   // Deck Operations
@@ -22,20 +34,20 @@ export class StorageService {
         lastStudied: deck.lastStudied ? new Date(deck.lastStudied) : undefined,
       }));
     } catch (error) {
-      console.error('Error getting decks:', error);
+      console.error("Error getting decks:", error);
       return [];
     }
   }
 
   static async getDeck(id: string): Promise<Deck | null> {
     const decks = await this.getAllDecks();
-    return decks.find(deck => deck.id === id) || null;
+    return decks.find((deck) => deck.id === id) || null;
   }
 
   static async getDeckWithCards(id: string): Promise<DeckWithCards | null> {
     const deck = await this.getDeck(id);
     if (!deck) return null;
-    
+
     const cards = await this.getCardsByDeck(id);
     return { ...deck, cards };
   }
@@ -43,17 +55,17 @@ export class StorageService {
   static async saveDeck(deck: Deck): Promise<void> {
     try {
       const decks = await this.getAllDecks();
-      const existingIndex = decks.findIndex(d => d.id === deck.id);
-      
+      const existingIndex = decks.findIndex((d) => d.id === deck.id);
+
       if (existingIndex >= 0) {
         decks[existingIndex] = deck;
       } else {
         decks.push(deck);
       }
-      
+
       await AsyncStorage.setItem(STORAGE_KEYS.DECKS, JSON.stringify(decks));
     } catch (error) {
-      console.error('Error saving deck:', error);
+      console.error("Error saving deck:", error);
       throw error;
     }
   }
@@ -61,15 +73,21 @@ export class StorageService {
   static async deleteDeck(id: string): Promise<void> {
     try {
       const decks = await this.getAllDecks();
-      const filteredDecks = decks.filter(deck => deck.id !== id);
-      await AsyncStorage.setItem(STORAGE_KEYS.DECKS, JSON.stringify(filteredDecks));
-      
+      const filteredDecks = decks.filter((deck) => deck.id !== id);
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.DECKS,
+        JSON.stringify(filteredDecks)
+      );
+
       // Also delete all cards in this deck
       const cards = await this.getAllCards();
-      const filteredCards = cards.filter(card => card.deckId !== id);
-      await AsyncStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(filteredCards));
+      const filteredCards = cards.filter((card) => card.deckId !== id);
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.CARDS,
+        JSON.stringify(filteredCards)
+      );
     } catch (error) {
-      console.error('Error deleting deck:', error);
+      console.error("Error deleting deck:", error);
       throw error;
     }
   }
@@ -84,38 +102,40 @@ export class StorageService {
         ...card,
         createdAt: new Date(card.createdAt),
         updatedAt: new Date(card.updatedAt),
-        lastReviewed: card.lastReviewed ? new Date(card.lastReviewed) : undefined,
+        lastReviewed: card.lastReviewed
+          ? new Date(card.lastReviewed)
+          : undefined,
         nextReview: card.nextReview ? new Date(card.nextReview) : undefined,
       }));
     } catch (error) {
-      console.error('Error getting cards:', error);
+      console.error("Error getting cards:", error);
       return [];
     }
   }
 
   static async getCard(id: string): Promise<Card | null> {
     const cards = await this.getAllCards();
-    return cards.find(card => card.id === id) || null;
+    return cards.find((card) => card.id === id) || null;
   }
 
   static async getCardsByDeck(deckId: string): Promise<Card[]> {
     const cards = await this.getAllCards();
-    return cards.filter(card => card.deckId === deckId);
+    return cards.filter((card) => card.deckId === deckId);
   }
 
   static async saveCard(card: Card): Promise<void> {
     try {
       const cards = await this.getAllCards();
-      const existingIndex = cards.findIndex(c => c.id === card.id);
-      
+      const existingIndex = cards.findIndex((c) => c.id === card.id);
+
       if (existingIndex >= 0) {
         cards[existingIndex] = card;
       } else {
         cards.push(card);
       }
-      
+
       await AsyncStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(cards));
-      
+
       // Update deck card count
       const deck = await this.getDeck(card.deckId);
       if (deck) {
@@ -125,7 +145,7 @@ export class StorageService {
         await this.saveDeck(deck);
       }
     } catch (error) {
-      console.error('Error saving card:', error);
+      console.error("Error saving card:", error);
       throw error;
     }
   }
@@ -133,12 +153,15 @@ export class StorageService {
   static async deleteCard(id: string): Promise<void> {
     try {
       const cards = await this.getAllCards();
-      const cardToDelete = cards.find(c => c.id === id);
+      const cardToDelete = cards.find((c) => c.id === id);
       if (!cardToDelete) return;
-      
-      const filteredCards = cards.filter(card => card.id !== id);
-      await AsyncStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(filteredCards));
-      
+
+      const filteredCards = cards.filter((card) => card.id !== id);
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.CARDS,
+        JSON.stringify(filteredCards)
+      );
+
       // Update deck card count
       const deck = await this.getDeck(cardToDelete.deckId);
       if (deck) {
@@ -147,7 +170,7 @@ export class StorageService {
         await this.saveDeck(deck);
       }
     } catch (error) {
-      console.error('Error deleting card:', error);
+      console.error("Error deleting card:", error);
       throw error;
     }
   }
@@ -155,19 +178,26 @@ export class StorageService {
   // Study Session Operations
   static async saveStudySession(session: StudySession): Promise<void> {
     try {
-      const sessionsJson = await AsyncStorage.getItem(STORAGE_KEYS.STUDY_SESSIONS);
+      const sessionsJson = await AsyncStorage.getItem(
+        STORAGE_KEYS.STUDY_SESSIONS
+      );
       const sessions = sessionsJson ? JSON.parse(sessionsJson) : [];
       sessions.push(session);
-      await AsyncStorage.setItem(STORAGE_KEYS.STUDY_SESSIONS, JSON.stringify(sessions));
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.STUDY_SESSIONS,
+        JSON.stringify(sessions)
+      );
     } catch (error) {
-      console.error('Error saving study session:', error);
+      console.error("Error saving study session:", error);
       throw error;
     }
   }
 
   static async getStudySessions(): Promise<StudySession[]> {
     try {
-      const sessionsJson = await AsyncStorage.getItem(STORAGE_KEYS.STUDY_SESSIONS);
+      const sessionsJson = await AsyncStorage.getItem(
+        STORAGE_KEYS.STUDY_SESSIONS
+      );
       if (!sessionsJson) return [];
       const sessions = JSON.parse(sessionsJson);
       return sessions.map((session: any) => ({
@@ -176,7 +206,25 @@ export class StorageService {
         endedAt: session.endedAt ? new Date(session.endedAt) : undefined,
       }));
     } catch (error) {
-      console.error('Error getting study sessions:', error);
+      console.error("Error getting study sessions:", error);
+      return [];
+    }
+  }
+
+  static async getAllStudySessions(): Promise<StudySession[]> {
+    try {
+      const sessionsJson = await AsyncStorage.getItem(
+        STORAGE_KEYS.STUDY_SESSIONS
+      );
+      if (!sessionsJson) return [];
+      const sessions = JSON.parse(sessionsJson);
+      return sessions.map((session: any) => ({
+        ...session,
+        startedAt: new Date(session.startedAt),
+        endedAt: session.endedAt ? new Date(session.endedAt) : undefined,
+      }));
+    } catch (error) {
+      console.error("Error getting study sessions:", error);
       return [];
     }
   }
@@ -197,10 +245,12 @@ export class StorageService {
       const stats = JSON.parse(statsJson);
       return {
         ...stats,
-        lastStudyDate: stats.lastStudyDate ? new Date(stats.lastStudyDate) : undefined,
+        lastStudyDate: stats.lastStudyDate
+          ? new Date(stats.lastStudyDate)
+          : undefined,
       };
     } catch (error) {
-      console.error('Error getting study stats:', error);
+      console.error("Error getting study stats:", error);
       return {
         totalCardsStudied: 0,
         totalDecks: 0,
@@ -213,16 +263,50 @@ export class StorageService {
 
   static async updateStudyStats(stats: StudyStats): Promise<void> {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.STUDY_STATS, JSON.stringify(stats));
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.STUDY_STATS,
+        JSON.stringify(stats)
+      );
     } catch (error) {
-      console.error('Error updating study stats:', error);
+      console.error("Error updating study stats:", error);
+      throw error;
+    }
+  }
+
+  // Settings Operations
+  static async getSettings(): Promise<Settings> {
+    try {
+      const settingsJson = await AsyncStorage.getItem(STORAGE_KEYS.SETTINGS);
+      if (!settingsJson) {
+        // Return default settings
+        const defaultSettings: Settings = {
+          hapticEnabled: true,
+        };
+        await this.updateSettings(defaultSettings);
+        return defaultSettings;
+      }
+      return JSON.parse(settingsJson);
+    } catch (error) {
+      console.error("Error getting settings:", error);
+      return { hapticEnabled: true };
+    }
+  }
+
+  static async updateSettings(settings: Settings): Promise<void> {
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.SETTINGS,
+        JSON.stringify(settings)
+      );
+    } catch (error) {
+      console.error("Error updating settings:", error);
       throw error;
     }
   }
 
   // Utility functions
   static generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return Crypto.randomUUID();
   }
 
   static async clearAllData(): Promise<void> {
@@ -234,7 +318,7 @@ export class StorageService {
         STORAGE_KEYS.STUDY_STATS,
       ]);
     } catch (error) {
-      console.error('Error clearing all data:', error);
+      console.error("Error clearing all data:", error);
       throw error;
     }
   }
@@ -247,11 +331,11 @@ export class StorageService {
     // Create sample deck
     const sampleDeck: Deck = {
       id: this.generateId(),
-      name: 'Welcome to Flashcards',
-      description: 'Get started with your first deck',
-      color: '#6366f1',
-      icon: '👋',
-      category: 'Tutorial',
+      name: "Welcome to Flashcards",
+      description: "Get started with your first deck",
+      color: "#6366f1",
+      icon: "👋",
+      category: "Tutorial",
       cardCount: 3,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -264,9 +348,9 @@ export class StorageService {
       {
         id: this.generateId(),
         deckId: sampleDeck.id,
-        front: 'What is a flashcard?',
-        back: 'A card with a question on one side and the answer on the other, used for studying and memorization.',
-        difficulty: 'easy',
+        front: "What is a flashcard?",
+        back: "A card with a question on one side and the answer on the other, used for studying and memorization.",
+        difficulty: "easy",
         reviewCount: 0,
         correctCount: 0,
         createdAt: new Date(),
@@ -275,9 +359,9 @@ export class StorageService {
       {
         id: this.generateId(),
         deckId: sampleDeck.id,
-        front: 'How do you study with flashcards?',
-        back: 'Read the question, try to recall the answer, then flip the card to check. Swipe right if you knew it, left if you need more practice.',
-        difficulty: 'easy',
+        front: "How do you study with flashcards?",
+        back: "Read the question, try to recall the answer, then flip the card to check. Swipe right if you knew it, left if you need more practice.",
+        difficulty: "easy",
         reviewCount: 0,
         correctCount: 0,
         createdAt: new Date(),
@@ -286,9 +370,9 @@ export class StorageService {
       {
         id: this.generateId(),
         deckId: sampleDeck.id,
-        front: 'Why use spaced repetition?',
-        back: 'Reviewing cards at increasing intervals helps move information from short-term to long-term memory more effectively.',
-        difficulty: 'medium',
+        front: "Why use spaced repetition?",
+        back: "Reviewing cards at increasing intervals helps move information from short-term to long-term memory more effectively.",
+        difficulty: "medium",
         reviewCount: 0,
         correctCount: 0,
         createdAt: new Date(),
